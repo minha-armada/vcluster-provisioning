@@ -29,10 +29,14 @@ on:
       signal_payload:
         description: Payload for the Temporal Signal (optional)
         required: false
+
 jobs:
   deploy-vcluster:
     environment: aks
     runs-on: self-hosted
+    defaults:
+      run:
+        shell: bash
     env:
       NAMESPACE_NAME: vcluster-${{ github.event.inputs.namespace_name }}
       KUBECONFIG: ${{ vars.KUBECONFIG }}
