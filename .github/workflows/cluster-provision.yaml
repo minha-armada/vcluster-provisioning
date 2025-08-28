@@ -29,14 +29,13 @@ on:
       signal_payload:
         description: Payload for the Temporal Signal (optional)
         required: false
-
 jobs:
   deploy-vcluster:
     environment: aks
     runs-on: self-hosted
     defaults:
       run:
-        shell: bash
+        shell: pwsh
     env:
       NAMESPACE_NAME: vcluster-${{ github.event.inputs.namespace_name }}
       KUBECONFIG: ${{ vars.KUBECONFIG }}
@@ -46,8 +45,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Create vCluster with resource limits
         run: |
-          echo "Creating vCluster with custom resources..."
-          helm upgrade --install ${CLUSTER_NAME} \
-            --create-namespace \
-            --set cluster_name=${CLUSTER_NAME} \
-            --set namespace_name=${NAMESPACE_NAME} ./armada-vcluster
+          Write-Output "Creating vCluster with custom resources..."
+          helm upgrade --install $env:CLUSTER_NAME `
+            --create-namespace `
+            --set cluster_name=$env:CLUSTER_NAME `
+            --set namespace_name=$env:NAMESPACE_NAME ./armada-vcluster
