@@ -1,0 +1,89 @@
+name: Create vCluster (CAPI)
+
+on:
+  workflow_dispatch:
+    inputs:
+      cluster_name:
+        description: 'Name of the vCluster'
+        required: true
+      namespace:
+        description: 'Namespace for the vCluster'
+        required: true
+      cpu:
+        description: 'CPU resource'
+        required: true
+      memory:
+        description: 'Memory resource'
+        required: true
+      storage:
+        description: 'Storage resource'
+        required: true
+
+jobs:
+  create-vcluster:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Use current kubeconfig context
+        shell: pwsh
+        run: |
+          $env:KUBECONFIG = "$HOME\.kube\config"
+          kubectl config current-context
+          kubectl config view --minify
+
+      - name: Create Namespace if not exists
+        shell: pwsh
+        run: |
+          $namespace = "${{ github.event.inputs.namespace }}"
+          kubectl get namespace $namespace > $null 2>&1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Namespace '$namespace' does not exist. Creating it..."
+            kubectl create namespace $namespace
+          } else {
+            Write-Host "Namespace '$namespace' already exists."
+          }
+
+      
+      - name: Apply Custom vCluster Manifest
+        shell: pwsh
+        run: |
+          # The custom manifest is rendered using envsubst to replace placeholders
+          $env:VCLUSTER_NAME = "${{ github.event.inputs.cluster_name }}"
+          $env:NAMESPACE = "${{ github.event.inputs.namespace }}"
+
+          # Use a tool to replace the template variables with the actual values.
+          # Here we are using PowerShell string replacement and a temporary file.
+          $templateContent = Get-Content 'templates/cluster-template.yaml' | Out-String
+          $renderedManifest = $templateContent.Replace('{{ .VclusterName }}', $env:VCLUSTER_NAME).Replace('{{ .Namespace }}', $env:NAMESPACE)
+
+          Set-Content -Path 'vcluster-manifest.yaml' -Value $renderedManifest
+          
+          # Apply the rendered manifest
+          kubectl apply -f vcluster-manifest.yaml
+          
+      - name: Wait for vCluster Readiness
+        shell: pwsh
+        run: |
+          $maxRetries = 5
+          $retryDelaySeconds = 10
+          for ($i = 0; $i -lt $maxRetries; $i++) {
+              Write-Host "Attempt $(( $i + 1 )) of $maxRetries to wait for vCluster readiness..."
+              kubectl wait --for=condition=ready vcluster `
+                  -n ${{ github.event.inputs.namespace }} ${{ github.event.inputs.cluster_name }} `
+                  --timeout=300s
+              if ($LASTEXITCODE -eq 0) {
+                  Write-Host "vCluster is ready. Exiting loop."
+                  break
+              }
+              Write-Host "vCluster not ready. Retrying in $retryDelaySeconds seconds..."
+              Start-Sleep -Seconds $retryDelaySeconds
+          }
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "vCluster did not become ready after $maxRetries attempts. Failing the step."
+              exit 1
+          }
+
+ 
