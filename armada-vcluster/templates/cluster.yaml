@@ -32,11 +32,10 @@ spec:
         fromHost:
           nodes:
             enabled: true            # Enable node syncing for Azure Arc
-      syncer:
+      controlPlane:
         extraArgs:
           - "--fake-nodes=false"    # Disable fake nodes
           - "--fake-kubelets=false" # Disable fake kubelets
-      controlPlane:
         statefulSet:
           resources:
             limits:
