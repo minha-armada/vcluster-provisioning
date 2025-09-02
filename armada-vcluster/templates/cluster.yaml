@@ -23,92 +23,92 @@ spec:
   #   host: ""
   #   port: 0
   helmRelease:
-  chart:
-    name: vcluster
-    repo: https://charts.loft.sh
-    version: {{ .Values.vcluster_version }}
-  values: |-
-    sync:
-      fromHost:
-        nodes:
+    chart:
+      name: vcluster
+      repo: https://charts.loft.sh
+      version: {{ .Values.vcluster_version }}
+    values: |-
+      sync:
+        fromHost:
+          nodes:
+            enabled: true
+      controlPlane:
+        statefulSet:
+          resources:
+            limits:
+              cpu: 250m
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+      policies:
+        resourceQuota:
           enabled: true
-    controlPlane:
-      statefulSet:
-        resources:
-          limits:
-            cpu: 250m
-            memory: 2Gi
-          requests:
-            cpu: 200m
-            memory: 256Mi
-    policies:
-      resourceQuota:
-        enabled: true
-        quota:
-          requests.cpu: 3000m
-          requests.memory: 2Gi
-          limits.cpu: 5000m
-          limits.memory: 10Gi
-          limits.ephemeral-storage: 300Gi
-          requests.ephemeral-storage: 100Gi
-          requests.storage: 10Gi
-    syncer:
-      extraPodResources:
-        clusterconnect-agent:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 200m
-            memory: 300Mi
-        clusteridentityoperator:
-          requests:
-            cpu: 100m
-            memory: 150Mi
-          limits:
-            cpu: 200m
-            memory: 300Mi
-        config-agent:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 200m
-            memory: 300Mi
-        controller-manager:
-          requests:
-            cpu: 150m
-            memory: 250Mi
-          limits:
-            cpu: 300m
-            memory: 400Mi
-        extension-manager:
-          requests:
-            cpu: 200m
-            memory: 250Mi
-          limits:
-            cpu: 400m
-            memory: 600Mi
-        kube-aad-proxy:
-          requests:
-            cpu: 50m
-            memory: 100Mi
-          limits:
-            cpu: 100m
-            memory: 200Mi
-        metrics-agent:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits:
-            cpu: 200m
-            memory: 300Mi
-        resource-sync-agent:
-          requests:
-            cpu: 100m
-            memory: 150Mi
-          limits:
-            cpu: 200m
-            memory: 300Mi
+          quota:
+            requests.cpu: 3000m
+            requests.memory: 2Gi
+            limits.cpu: 5000m
+            limits.memory: 10Gi
+            limits.ephemeral-storage: 300Gi
+            requests.ephemeral-storage: 100Gi
+            requests.storage: 10Gi
+      syncer:
+        extraPodResources:
+          clusterconnect-agent:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 200m
+              memory: 300Mi
+          clusteridentityoperator:
+            requests:
+              cpu: 100m
+              memory: 150Mi
+            limits:
+              cpu: 200m
+              memory: 300Mi
+          config-agent:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 200m
+              memory: 300Mi
+          controller-manager:
+            requests:
+              cpu: 150m
+              memory: 250Mi
+            limits:
+              cpu: 300m
+              memory: 400Mi
+          extension-manager:
+            requests:
+              cpu: 200m
+              memory: 250Mi
+            limits:
+              cpu: 400m
+              memory: 600Mi
+          kube-aad-proxy:
+            requests:
+              cpu: 50m
+              memory: 100Mi
+            limits:
+              cpu: 100m
+              memory: 200Mi
+          metrics-agent:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 200m
+              memory: 300Mi
+          resource-sync-agent:
+            requests:
+              cpu: 100m
+              memory: 150Mi
+            limits:
+              cpu: 200m
+              memory: 300Mi
 
  
