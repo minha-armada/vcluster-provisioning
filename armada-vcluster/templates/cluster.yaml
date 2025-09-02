@@ -49,10 +49,10 @@ spec:
         resourceQuota:
           enabled: true
           quota:
-            requests.cpu:     {{ add .Values.cluster_cpu 200 | add 3000 }}m      # Arc + control plane
-            requests.memory:  {{ add .Values.cluster_ram 256 | add 2000 }}Mi    # Arc + control plane
-            limits.cpu:       {{ add .Values.cluster_cpu 200 | add 5000 }}m     # Arc + control plane + buffer
-            limits.memory:    {{ add .Values.cluster_ram 2048 | add 9000 }}Mi   # Arc + control plane + buffer
-            limits.ephemeral-storage: 300Gi
-            requests.ephemeral-storage: 100Gi
+            requests.cpu:     {{ add .Values.cluster_cpu 200 | add 600 }}m      # Arc + control plane
+            requests.memory:  {{ add .Values.cluster_ram 256 | add 1000 }}Mi    # Arc + control plane
+            limits.cpu:       {{ add .Values.cluster_cpu 200 | add 1000 }}m     # Arc + control plane + buffer
+            limits.memory:    {{ add .Values.cluster_ram 2048 | add 2000 }}Mi   # Arc + control plane + buffer
+            limits.ephemeral-storage: 100Gi
+            requests.ephemeral-storage: 50Gi
       
