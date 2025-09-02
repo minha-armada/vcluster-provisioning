@@ -42,6 +42,8 @@ spec:
               cpu: 200m
               memory: 256Mi
       policies:
+        limitRange:
+          enabled: false
         resourceQuota:
           enabled: true
           quota:
