@@ -19,6 +19,9 @@ metadata:
   name: {{ .Values.cluster_name }}
   namespace: {{ .Values.namespace_name }}
 spec:
+  # controlPlaneEndpoint:
+  #   host: ""
+  #   port: 0
   helmRelease:
     chart:
       name: vcluster
@@ -31,11 +34,11 @@ spec:
             runtimeClassName: kata-clh
         fromHost:
           nodes:
-            enabled: true            # Enable node syncing for Azure Arc
+            enabled: false
+            selector:
+              labels:
+                agentpool: userpool01
       controlPlane:
-        extraArgs:
-          - "--fake-nodes=false"    # Disable fake nodes
-          - "--fake-kubelets=false" # Disable fake kubelets
         statefulSet:
           resources:
             limits:
@@ -45,6 +48,8 @@ spec:
               cpu: 200m
               memory: 256Mi
       policies:
+        limitRange:
+          enabled: false
         resourceQuota:
           enabled: true
           quota:
@@ -54,4 +59,3 @@ spec:
             limits.memory:    {{ add .Values.cluster_ram 2048 | add 2000 }}Mi   # Arc + control plane + buffer
             limits.ephemeral-storage: 100Gi
             requests.ephemeral-storage: 50Gi
-      
