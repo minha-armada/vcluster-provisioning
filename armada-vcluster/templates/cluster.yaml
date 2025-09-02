@@ -34,10 +34,7 @@ spec:
             runtimeClassName: kata-clh
         fromHost:
           nodes:
-            enabled: false
-            selector:
-              labels:
-                agentpool: userpool01
+            enabled: true
       controlPlane:
         statefulSet:
           resources:
@@ -54,8 +51,8 @@ spec:
           enabled: true
           quota:
             requests.cpu:     {{ add .Values.cluster_cpu 200 | add 3000 }}m      # Arc + control plane
-            requests.memory:  {{ add .Values.cluster_ram 256 | add 7000 }}Mi    # Arc + control plane
+            requests.memory:  {{ add .Values.cluster_ram 256 | add 3000 }}Mi    # Arc + control plane
             limits.cpu:       {{ add .Values.cluster_cpu 200 | add 5000 }}m     # Arc + control plane + buffer
             limits.memory:    {{ add .Values.cluster_ram 2048 | add 10000 }}Mi   # Arc + control plane + buffer
-            limits.ephemeral-storage: 200Gi
+            limits.ephemeral-storage: 300Gi
             requests.ephemeral-storage: 100Gi
