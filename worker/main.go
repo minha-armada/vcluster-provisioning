@@ -36,7 +36,7 @@ func main() {
 	w := worker.New(c, "VclusterTaskQueue", worker.Options{})
 	w.RegisterWorkflow(workflow.CreateVclusterWorkflow)
 	w.RegisterActivity(workflow.CreateVclusterActivity)
-	w.RegisterActivity(workflow.SignalCompleteActivity)
+	w.RegisterActivity(workflow.OnboardAzureArcActivity)
 
 	err = w.Run(worker.InterruptCh())
 	if err != nil {

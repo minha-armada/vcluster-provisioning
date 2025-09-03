@@ -22,13 +22,13 @@ on:
         default: 10
       workflow_id:
         description: Temporal Workflow ID (optional)
-        required: false
+        required: true
       signal_name:
         description: Temporal Signal Name (required if workflow_id is set)
-        required: false
+        required: true
       signal_payload:
         description: Payload for the Temporal Signal (optional)
-        required: false
+        required: true
 jobs:
   deploy-vcluster:
     environment: aks
@@ -56,3 +56,17 @@ jobs:
             --set cluster_ram=$env:MEMORY `
             --set cluster_storage=$env:STORAGE `
             ./armada-vcluster
+      - name: Signal Temporal Workflow
+        run: |
+          $body = @{
+            workflowId  = "${{ github.event.inputs.workflow_id }}"
+            signalName  = "${{ github.event.inputs.signal_name }}"
+            signalInput = "${{ github.event.inputs.signal_payload }}"
+          } | ConvertTo-Json -Depth 3
+
+          Invoke-RestMethod `
+            -Uri "http://localhost:8080/trigger-signal" `
+            -Method Post `
+            -Body $body `
+            -ContentType "application/json"
+     

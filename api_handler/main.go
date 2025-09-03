@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -27,6 +28,9 @@ func main() {
 
 	log.Println("Server started at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	http.HandleFunc("/trigger-signal", handleSignal)
+
 }
 
 // serveForm serves the HTML form located in ./ui/ui.html
@@ -72,17 +76,19 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	namespace := fmt.Sprintf("%s-ns", vclusterName)
+	workflowID := fmt.Sprintf("vcluster-workflow-%s", vclusterName)
 
 	workflowInput := workflow.VclusterInput{
 		VclusterName: vclusterName,
-		Namespace:    namespace, // This will be "vcluster-1-ns"
+		Namespace:    namespace,
 		CPU:          cpu,
 		Memory:       memory,
 		Storage:      storage,
+		WorkflowID:   workflowID,
 	}
 
 	workflowOptions := client.StartWorkflowOptions{
-		ID:        workflowInput.WorkflowID,
+		ID:        workflowID,
 		TaskQueue: "VclusterTaskQueue",
 	}
 
@@ -94,4 +100,32 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 	// Response shown after submission
 	fmt.Fprintf(w, "Workflow started successfully! RunID: %s", we.GetRunID())
+}
+
+func handleSignal(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		WorkflowID  string `json:"workflowId"`
+		SignalName  string `json:"signalName"`
+		SignalInput string `json:"signalInput"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	err = temporalClient.SignalWorkflow(context.Background(), req.WorkflowID, "", req.SignalName, req.SignalInput)
+	if err != nil {
+		http.Error(w, "Failed to send signal to workflow: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Signal sent to workflow successfully"))
 }

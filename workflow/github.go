@@ -17,7 +17,13 @@ func triggerGithubAction(ctx context.Context, actionName string, input VclusterI
 	token := os.Getenv("GH_TOKEN")
 	repoOwner := os.Getenv("REPO_OWNER")
 	repoName := os.Getenv("REPO_NAME")
-	workflowFile := os.Getenv("VCLUSTER_WORKFLOW_FILE")
+	var workflowFile string
+	switch actionName {
+	case "create":
+		workflowFile = os.Getenv("VCLUSTER_WORKFLOW_FILE")
+	case "arc-integration":
+		workflowFile = os.Getenv("ARC_WORKFLOW_FILE")
+	}
 
 	if token == "" || repoOwner == "" || repoName == "" || workflowFile == "" {
 		return fmt.Errorf("missing required environment variables")
@@ -34,6 +40,9 @@ func triggerGithubAction(ctx context.Context, actionName string, input VclusterI
 		"cpu":            input.CPU,
 		"memory":         input.Memory,
 		"storage":        input.Storage,
+		"workflow_id":    input.WorkflowID,
+		"signal_name":    "vcluster-created",
+		"signal_payload": "done",
 	}
 
 	payloadObj := map[string]interface{}{
