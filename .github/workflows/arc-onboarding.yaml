@@ -1,37 +1,50 @@
 name: Azure Arc Onboard (Windows Self-hosted)
+
 on:
   workflow_dispatch:
     inputs:
-      clusterName:
-        description: 'Name of the Kubernetes cluster'
+      cluster_name:
+        description: 'Name of the Kubernetes cluster (must match created vCluster)'
         required: true
-        default: 'AzureArcVClusterTestPOC'
-      resourceGroup:
-        description: 'Azure Resource Group name'
+      namespace_name:
+        description: 'Namespace inside the cluster'
         required: true
-        default: 'AzureArcVClusterTest'
-      location:
-        description: 'Azure region (e.g. WestUS3)'
-        required: true
-        default: 'WestUS3'
+
 jobs:
   onboard-cluster:
     runs-on: self-hosted
     defaults:
       run:
-        shell: pwsh  # Use PowerShell for Windows runners
+        shell: pwsh  # PowerShell shell for Windows runner
+
+    env:
+      CLUSTER_NAME: ${{ github.event.inputs.cluster_name }}
+      NAMESPACE_NAME: ${{ github.event.inputs.namespace_name }}
+      RESOURCE_GROUP: AzureArcVClusterTest
+      LOCATION: WestUS3
+
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-    - name: Create Resource Group
-      run: |
-        az group create `
-          --name "${{ github.event.inputs.resourceGroup }}" `
-          --location "${{ github.event.inputs.location }}" `
-          --output table
-    - name: Connect Kubernetes Cluster to Azure Arc
-      run: |
-        az connectedk8s connect `
-          --name "${{ github.event.inputs.clusterName }}" `
-          --resource-group "${{ github.event.inputs.resourceGroup }}"
- 
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set kube context to cluster
+        run: |
+          kubectl config use-context $env:CLUSTER_NAME
+
+      - name: Apply Azure Arc namespace and limitrange YAML
+        run: |
+          kubectl apply -f ./templates/arc-ns.yaml
+
+      - name: Create Resource Group in Azure (if not exists)
+        run: |
+          az group create `
+            --name $env:RESOURCE_GROUP `
+            --location $env:LOCATION `
+            --output table
+
+      - name: Connect Kubernetes Cluster to Azure Arc
+        run: |
+          az connectedk8s connect `
+            --name $env:CLUSTER_NAME `
+            --resource-group $env:RESOURCE_GROUP
+      
