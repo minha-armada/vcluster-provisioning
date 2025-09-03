@@ -7,13 +7,14 @@ import (
 )
 
 type VclusterInput struct {
-	VclusterName string
-	Namespace    string
-	CPU          string
-	Memory       string
-	Storage      string
-
-	WorkflowID string
+	VclusterName  string
+	Namespace     string
+	CPU           string
+	Memory        string
+	Storage       string
+	WorkflowID    string
+	SignalName    string
+	SignalPayload string
 }
 
 func CreateVclusterWorkflow(ctx workflow.Context, input VclusterInput) (string, error) {
