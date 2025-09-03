@@ -33,7 +33,7 @@ jobs:
 
       - name: Apply Azure Arc namespace and limitrange YAML
         run: |
-          kubectl apply -f ./templates/arc-ns.yaml
+          kubectl apply -f ./arc-ns/arc-ns.yaml
 
       - name: Create Resource Group in Azure (if not exists)
         run: |

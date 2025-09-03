@@ -25,11 +25,10 @@ func main() {
 
 	http.HandleFunc("/", serveForm)
 	http.HandleFunc("/submit", handleSubmit)
+	http.HandleFunc("/trigger-signal", handleSignal)
 
 	log.Println("Server started at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
-
-	http.HandleFunc("/trigger-signal", handleSignal)
 
 }
 
@@ -104,7 +103,7 @@ func handleSubmit(w http.ResponseWriter, r *http.Request) {
 
 func handleSignal(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
