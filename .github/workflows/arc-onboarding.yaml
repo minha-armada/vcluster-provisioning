@@ -28,13 +28,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect to vCluster in background (PowerShell Job)
+      - name: Connect to vCluster (blocking shell)
         run: |
-          $job = Start-Job -ScriptBlock {
-            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current
-          }
+          Start-Process `
+            -FilePath "powershell" `
+            -ArgumentList "-NoExit", "-Command", "vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current" `
+            -WindowStyle Hidden
+
           Start-Sleep -Seconds 20
-          $job.Id | Out-File "vcluster-job-id.txt"
 
       - name: Set kube context to vCluster
         run: |
@@ -57,12 +58,3 @@ jobs:
           az connectedk8s connect `
             --name $env:CLUSTER_NAME `
             --resource-group $env:RESOURCE_GROUP
-
-      - name: Stop vcluster port-forward job
-        if: always()
-        run: |
-          if (Test-Path "vcluster-job-id.txt") {
-            $jobId = Get-Content "vcluster-job-id.txt"
-            Stop-Job -Id $jobId
-            Remove-Job -Id $jobId -Force
-          }
