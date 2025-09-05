@@ -28,51 +28,69 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect to vCluster
+      - name: Connect to vCluster (Background Process)
         run: |
-          Start-Process -FilePath "vcluster" -ArgumentList "connect ${{ env.CLUSTER_NAME }} -n ${{ env.NAMESPACE_NAME }} --update-current"
+          Write-Output "Starting vcluster connect in the background..."
+          # Start the vcluster connect process in a new PowerShell window, non-blocking
+          Start-Process -FilePath "powershell" -ArgumentList "-NoExit", "-Command", "vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current" -WindowStyle Hidden
 
       - name: Wait for vCluster connection to be ready
         run: |
-          $maxRetries = 60
-          $retries = 0
-          while ($true) {
-              try {
-                  # Test the connection using a simple command
-                  kubectl get --raw=/healthz
-                  Write-Output "vCluster connection is ready."
-                  break
-              } catch {
-                  Write-Output "Waiting for vCluster connection... ($($retries + 1)/$maxRetries)"
-                  $retries++
-                  if ($retries -ge $maxRetries) {
-                      throw "Failed to connect to vCluster after $maxRetries retries."
-                  }
-                  Start-Sleep -Seconds 5
+          $maxAttempts = 120
+          $sleepSeconds = 5
+          $attempt = 0
+          Write-Output "Polling for vcluster API server readiness..."
+
+          while ($attempt -lt $maxAttempts) {
+            try {
+              $output = kubectl get --raw=/healthz 2>&1
+              # If the command succeeds, we're connected
+              if ($LASTEXITCODE -eq 0 -and $output -notlike "*connection refused*") {
+                Write-Output "vCluster connection is ready."
+                break
               }
+            } catch {
+              # Command failed, assume it's not ready yet
+              Write-Output "Attempt $($attempt + 1): Connection not ready. Waiting..."
+            }
+            $attempt++
+            Start-Sleep -Seconds $sleepSeconds
+          }
+
+          if ($attempt -eq $maxAttempts) {
+            Write-Error "Failed to connect to vCluster API after multiple retries. Exiting."
+            exit 1
           }
 
       - name: Set kube context to vCluster
         run: |
           $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
+          Write-Output "Setting kube context to '$contextName'..."
           kubectl config use-context $contextName
 
       - name: Fix kubeconfig server URL to IPv4
         run: |
+          Write-Output "Fixing kubeconfig server URL from 'localhost' to '127.0.0.1'..."
           $context = kubectl config current-context
           $cluster = (kubectl config view -o json | ConvertFrom-Json).contexts | Where-Object { $_.name -eq $context } | Select-Object -ExpandProperty context | Select-Object -ExpandProperty cluster
           $server = (kubectl config view -o json | ConvertFrom-Json).clusters | Where-Object { $_.name -eq $cluster } | Select-Object -ExpandProperty cluster | Select-Object -ExpandProperty server
           if ($server -match 'localhost') {
             $newServer = $server -replace 'localhost', '127.0.0.1'
             kubectl config set "clusters.$cluster.server" $newServer
+            Write-Output "Server URL updated to $newServer."
+          } else {
+            Write-Output "Server URL is already correct."
           }
 
       - name: Apply Azure Arc namespace and limitrange YAML
         run: |
+          Write-Output "Applying Azure Arc namespace and limitrange YAML..."
           kubectl apply -f ./arc-ns/arc-ns.yaml
+          Write-Output "YAML applied successfully."
 
       - name: Create Resource Group in Azure (if not exists)
         run: |
+          Write-Output "Creating Azure resource group '$env:RESOURCE_GROUP'..."
           az group create `
             --name $env:RESOURCE_GROUP `
             --location $env:LOCATION `
@@ -80,6 +98,8 @@ jobs:
 
       - name: Connect Kubernetes Cluster to Azure Arc
         run: |
+          Write-Output "Connecting vCluster to Azure Arc..."
           az connectedk8s connect `
             --name $env:CLUSTER_NAME `
             --resource-group $env:RESOURCE_GROUP
+          Write-Output "vCluster successfully connected to Azure Arc."
