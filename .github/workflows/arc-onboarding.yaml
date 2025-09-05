@@ -42,6 +42,16 @@ jobs:
           $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
           kubectl config use-context $contextName
 
+      - name: Fix kubeconfig server URL to IPv4
+        run: |
+          $context = kubectl config current-context
+          $cluster = (kubectl config view -o json | ConvertFrom-Json).contexts | Where-Object { $_.name -eq $context } | Select-Object -ExpandProperty context | Select-Object -ExpandProperty cluster
+          $server = (kubectl config view -o json | ConvertFrom-Json).clusters | Where-Object { $_.name -eq $cluster } | Select-Object -ExpandProperty cluster | Select-Object -ExpandProperty server
+          if ($server -match 'localhost') {
+            $newServer = $server -replace 'localhost', '127.0.0.1'
+            kubectl config set "clusters.$cluster.server" $newServer
+          }
+
       - name: Apply Azure Arc namespace and limitrange YAML
         run: |
           kubectl apply -f ./arc-ns/arc-ns.yaml
