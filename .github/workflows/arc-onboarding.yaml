@@ -28,14 +28,29 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect to vCluster (blocking shell)
+      - name: Connect to vCluster
         run: |
-          Start-Process `
-            -FilePath "powershell" `
-            -ArgumentList "-NoExit", "-Command", "vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current" `
-            -WindowStyle Hidden
+          Start-Process -FilePath "vcluster" -ArgumentList "connect ${{ env.CLUSTER_NAME }} -n ${{ env.NAMESPACE_NAME }} --update-current"
 
-          Start-Sleep -Seconds 20
+      - name: Wait for vCluster connection to be ready
+        run: |
+          $maxRetries = 60
+          $retries = 0
+          while ($true) {
+              try {
+                  # Test the connection using a simple command
+                  kubectl get --raw=/healthz
+                  Write-Output "vCluster connection is ready."
+                  break
+              } catch {
+                  Write-Output "Waiting for vCluster connection... ($($retries + 1)/$maxRetries)"
+                  $retries++
+                  if ($retries -ge $maxRetries) {
+                      throw "Failed to connect to vCluster after $maxRetries retries."
+                  }
+                  Start-Sleep -Seconds 5
+              }
+          }
 
       - name: Set kube context to vCluster
         run: |
