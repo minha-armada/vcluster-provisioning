@@ -27,12 +27,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set kube context to vcluster (deterministic name)
+      - name: Connect to vCluster (configure kube context)
         run: |
-            $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
-            Write-Host "Using kube context: $contextName"
-            kubectl config use-context $contextName
+            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current --connect=false
 
+      - name: Confirm vCluster context is now active
+        run: |
+            kubectl config current-context
+            kubectl get ns
 
       - name: Apply Azure Arc namespace and limitrange YAML
         run: |
