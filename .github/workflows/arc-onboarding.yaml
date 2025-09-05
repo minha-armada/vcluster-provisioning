@@ -28,12 +28,19 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect and deploy in one step
+      - name: Connect to vCluster in background
         run: |
-            Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
-            Start-Sleep -Seconds 100
-            kubectl config use-context "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
-            kubectl apply -f ./arc-ns/arc-ns.yaml
+          Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
+          Start-Sleep -Seconds 15
+
+      - name: Set kube context
+        run: |
+          $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
+          kubectl config use-context $contextName
+
+      - name: Apply Azure Arc namespace
+        run: |
+          kubectl apply -f ./arc-ns/arc-ns.yaml
 
       - name: Create Resource Group in Azure (if not exists)
         run: |
