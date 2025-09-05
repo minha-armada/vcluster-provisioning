@@ -46,9 +46,12 @@ func CreateVclusterWorkflow(ctx workflow.Context, input VclusterInput) (string, 
 	})
 	selector.AddFuture(timeout, func(f workflow.Future) {
 		logger.Error("Timeout waiting for vCluster signal from GitHub")
+		// You could set a flag or return here if you want to fail the workflow on timeout.
 	})
 
-	selector.Select(ctx)
+	for !received {
+		selector.Select(ctx)
+	}
 
 	if !received {
 		return "", workflow.NewContinueAsNewError(ctx, CreateVclusterWorkflow, input) // or return error
