@@ -42,12 +42,6 @@ jobs:
             $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
             kubectl config use-context $contextName
 
-      - name: Apply Azure Arc namespace and limitrange YAML
-        run: |
-            Write-Output "Applying Azure Arc namespace and limitrange YAML..."
-            kubectl apply -f ./arc-ns/arc-ns.yaml --validate=false
-
-
       - name: Create Resource Group in Azure (if not exists)
         run: |
           Write-Output "Creating Azure resource group '$env:RESOURCE_GROUP'..."

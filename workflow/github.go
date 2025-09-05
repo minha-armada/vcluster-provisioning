@@ -17,12 +17,14 @@ func triggerGithubAction(ctx context.Context, actionName string, input VclusterI
 	token := os.Getenv("GH_TOKEN")
 	repoOwner := os.Getenv("REPO_OWNER")
 	repoName := os.Getenv("REPO_NAME")
+
+	// Add a new environment variable for the Azure Arc workflow file
 	var workflowFile string
 	switch actionName {
 	case "create":
 		workflowFile = os.Getenv("VCLUSTER_WORKFLOW_FILE")
 	case "arc-integration":
-		workflowFile = os.Getenv("ARC_WORKFLOW_FILE")
+		workflowFile = os.Getenv("ARC_WORKFLOW_FILE") // Use a new env var
 	}
 
 	if token == "" || repoOwner == "" || repoName == "" || workflowFile == "" {
@@ -43,6 +45,25 @@ func triggerGithubAction(ctx context.Context, actionName string, input VclusterI
 		"workflow_id":    input.WorkflowID,
 		"signal_name":    "vcluster-created",
 		"signal_payload": "done",
+	}
+
+	switch actionName {
+	case "create":
+		inputs = map[string]string{
+			"cluster_name":   input.VclusterName,
+			"namespace_name": fmt.Sprintf("%s-ns", input.VclusterName),
+			"cpu":            input.CPU,
+			"memory":         input.Memory,
+			"storage":        input.Storage,
+			"workflow_id":    input.WorkflowID,
+			"signal_name":    "vcluster-created",
+			"signal_payload": "done",
+		}
+	case "arc-integration":
+		inputs = map[string]string{
+			"cluster_name":   input.VclusterName, // Corrected key name
+			"namespace_name": fmt.Sprintf("vcluster-%s-ns", input.VclusterName),
+		}
 	}
 
 	payloadObj := map[string]interface{}{
