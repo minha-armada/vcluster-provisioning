@@ -27,11 +27,15 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        
-      - name: Connect to vCluster in background
+
+
+      - name: Connect to vCluster in background (manual)
         run: |
-            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current --background
-            Start-Sleep -Seconds 15  # give it time to establish
+            Start-Job -ScriptBlock {
+            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current
+            } | Out-File -FilePath "vcluster-job-id.txt"
+            Start-Sleep -Seconds 15  # wait for the tunnel to be ready
+
 
       - name: Set kube context
         run: |
