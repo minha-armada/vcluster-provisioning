@@ -22,27 +22,26 @@ jobs:
       NAMESPACE_NAME: ${{ github.event.inputs.namespace_name }}
       RESOURCE_GROUP: AzureArcVClusterTest
       LOCATION: WestUS3
-      KUBECONFIG: ${{ vars.KUBECONFIG }}  # ✅ fixed spacing here
+      KUBECONFIG: ${{ vars.KUBECONFIG }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Test parent cluster connectivity
+      - name: Connect to vCluster in background (PowerShell Job)
         run: |
-          kubectl get ns  # ✅ optional debug step
+          $job = Start-Job -ScriptBlock {
+            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current
+          }
+          Start-Sleep -Seconds 20
+          $job.Id | Out-File "vcluster-job-id.txt"
 
-      - name: Connect to vCluster in background
-        run: |
-          Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
-          Start-Sleep -Seconds 15  # ✅ gives port-forward time to start
-
-      - name: Set kube context
+      - name: Set kube context to vCluster
         run: |
           $contextName = "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
           kubectl config use-context $contextName
 
-      - name: Apply Azure Arc namespace
+      - name: Apply Azure Arc namespace and limitrange YAML
         run: |
           kubectl apply -f ./arc-ns/arc-ns.yaml
 
@@ -58,3 +57,12 @@ jobs:
           az connectedk8s connect `
             --name $env:CLUSTER_NAME `
             --resource-group $env:RESOURCE_GROUP
+
+      - name: Stop vcluster port-forward job
+        if: always()
+        run: |
+          if (Test-Path "vcluster-job-id.txt") {
+            $jobId = Get-Content "vcluster-job-id.txt"
+            Stop-Job -Id $jobId
+            Remove-Job -Id $jobId -Force
+          }
