@@ -11,27 +11,31 @@ on:
         required: true
 
 jobs:
-  onboard-cluster:
+  deploy-vcluster:
+    environment: aks
     runs-on: self-hosted
     defaults:
       run:
-        shell: pwsh  # PowerShell shell for Windows runner
-
+        shell: pwsh
     env:
       CLUSTER_NAME: ${{ github.event.inputs.cluster_name }}
       NAMESPACE_NAME: ${{ github.event.inputs.namespace_name }}
       RESOURCE_GROUP: AzureArcVClusterTest
       LOCATION: WestUS3
-      KUBECONFIG: ${{ github.workspace }}\vcluster-kubeconfig.yaml
+      KUBECONFIG: ${{ vars.KUBECONFIG }}  # ✅ fixed spacing here
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
+      - name: Test parent cluster connectivity
+        run: |
+          kubectl get ns  # ✅ optional debug step
+
       - name: Connect to vCluster in background
         run: |
           Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
-          Start-Sleep -Seconds 15
+          Start-Sleep -Seconds 15  # ✅ gives port-forward time to start
 
       - name: Set kube context
         run: |
