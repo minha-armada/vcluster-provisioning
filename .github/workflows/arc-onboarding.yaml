@@ -31,10 +31,9 @@ jobs:
       - name: Connect and deploy in one step
         run: |
             Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
-            Start-Sleep -Seconds 10
+            Start-Sleep -Seconds 100
             kubectl config use-context "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
             kubectl apply -f ./arc-ns/arc-ns.yaml
- 
 
       - name: Create Resource Group in Azure (if not exists)
         run: |
