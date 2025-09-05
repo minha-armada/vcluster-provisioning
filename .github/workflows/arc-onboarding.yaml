@@ -28,20 +28,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Generate kubeconfig for vCluster
+      - name: Connect and deploy in one step
         run: |
-          $kubeconfig = vcluster kubeconfig $env:CLUSTER_NAME -n $env:NAMESPACE_NAME
-          $kubeconfig | Out-File -FilePath $env:KUBECONFIG -Encoding ascii
-          Write-Host "KUBECONFIG written to $env:KUBECONFIG"
-
-      - name: Confirm access to vCluster
-        run: |
-          kubectl config get-contexts
-          kubectl get ns
-
-      - name: Apply Azure Arc namespace and limitrange YAML
-        run: |
-          kubectl apply -f ./arc-ns/arc-ns.yaml
+            Start-Process -NoNewWindow -FilePath "vcluster" -ArgumentList "connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME" -PassThru
+            Start-Sleep -Seconds 10
+            kubectl config use-context "vcluster_${env:CLUSTER_NAME}_${env:NAMESPACE_NAME}_leviathan-dev01"
+            kubectl apply -f ./arc-ns/arc-ns.yaml
+ 
 
       - name: Create Resource Group in Azure (if not exists)
         run: |
