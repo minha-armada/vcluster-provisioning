@@ -22,19 +22,22 @@ jobs:
       NAMESPACE_NAME: ${{ github.event.inputs.namespace_name }}
       RESOURCE_GROUP: AzureArcVClusterTest
       LOCATION: WestUS3
+      KUBECONFIG: ${{ github.workspace }}\vcluster-kubeconfig.yaml
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Connect to vCluster (configure kube context)
+      - name: Generate kubeconfig for vCluster
         run: |
-            vcluster connect $env:CLUSTER_NAME -n $env:NAMESPACE_NAME --update-current --connect=false
+          $kubeconfig = vcluster kubeconfig $env:CLUSTER_NAME -n $env:NAMESPACE_NAME
+          $kubeconfig | Out-File -FilePath $env:KUBECONFIG -Encoding ascii
+          Write-Host "KUBECONFIG written to $env:KUBECONFIG"
 
-      - name: Confirm vCluster context is now active
+      - name: Confirm access to vCluster
         run: |
-            kubectl config current-context
-            kubectl get ns
+          kubectl config get-contexts
+          kubectl get ns
 
       - name: Apply Azure Arc namespace and limitrange YAML
         run: |
@@ -52,4 +55,3 @@ jobs:
           az connectedk8s connect `
             --name $env:CLUSTER_NAME `
             --resource-group $env:RESOURCE_GROUP
-      
